@@ -1,86 +1,138 @@
-# 📝 Guide de Référence Rapide - manage_projects.sh
+# 🚀 Guide Rapide - Actions Manuelles
 
-## 🚀 Commandes essentielles
-
-### Gestion des projets
-```bash
-./manage_projects.sh add <nom>                    # Créer un projet
-./manage_projects.sh add <nom> <port>             # Créer avec port spécifique
-./manage_projects.sh --no-deploy add <nom>        # Créer sans déployer
-./manage_projects.sh list                         # Lister les projets
-./manage_projects.sh modify <nom> <port>          # Changer le port
-./manage_projects.sh remove <nom>                 # Supprimer un projet
-```
-
-### Gestion des sites nginx
-```bash
-./manage_projects.sh site-list                   # État des sites
-./manage_projects.sh site-enable <nom>           # Activer un site
-./manage_projects.sh site-disable <nom>          # Désactiver un site
-./manage_projects.sh site-create <nom>           # Créer un site
-./manage_projects.sh site-remove <nom>           # Supprimer un site
-```
-
-## 🌐 Accès aux sites
-
-| Type d'accès | URL | Description |
-|---------------|-----|-------------|
-| Page d'accueil | `http://localhost/` | Liste tous les projets |
-| Statut | `http://localhost/status` | État des sites |
-| Via proxy | `http://localhost/monsite/` | Accès via nginx |
-| Port direct | `http://localhost:8080/` | Accès direct au conteneur |
-| Sous-domaine | `http://monsite.localhost/` | Nécessite config DNS |
-
-## 🔧 Commandes Docker utiles
+## ➕ Ajouter un projet (version courte)
 
 ```bash
-docker compose ps                    # État des conteneurs
-docker compose up -d                # Démarrer l'infrastructure
-docker compose down                 # Arrêter l'infrastructure
-docker compose logs reverse_proxy   # Logs nginx
-docker exec reverse_proxy nginx -t  # Tester config nginx
-docker exec reverse_proxy nginx -s reload  # Recharger nginx
+# 1. Variables
+nom_projet="mon-projet"
+
+# 2. Créer les répertoires
+mkdir -p "projects/$nom_projet" "data/$nom_projet"
+
+# 3. Créer index.html
+echo "<!DOCTYPE html><html><head><title>$nom_projet</title></head><body><h1>Projet $nom_projet</h1><p>URL: http://localhost/$nom_projet/</p></body></html>" > "projects/$nom_projet/index.html"
+
+# 4. Éditer docker-compose.yml - AJOUTER avant "networks:" :
+```
+```yaml
+  mon-projet_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.httpd
+    container_name: mon-projet_web
+    volumes: ["./projects/mon-projet:/var/www/html"]
+    networks: [traefik, mon-projet_net]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mon-projet.rule=Host(`localhost`) && PathPrefix(`/mon-projet`)
+      - traefik.http.routers.mon-projet.entrypoints=web
+      - traefik.http.services.mon-projet.loadbalancer.server.port=80
+      - traefik.http.middlewares.mon-projet-strip.stripprefix.prefixes=/mon-projet
+      - traefik.http.routers.mon-projet.middlewares=mon-projet-strip
+      - traefik.docker.network=projet-compose_traefik
+
+  mon-projet_db:
+    build:
+      context: .
+      dockerfile: Dockerfile.mariadb
+    container_name: mon-projet_db
+    environment: [MYSQL_ALLOW_EMPTY_PASSWORD=1, MYSQL_DATABASE=mon-projet]
+    volumes: ["./data/mon-projet:/var/lib/mysql"]
+    networks: [mon-projet_net]
 ```
 
-## 📁 Structure des fichiers
+```bash
+# 5. Ajouter dans la section networks:
+#   mon-projet_net:
 
-```
-nginx_config/
-├── sites-available/    # Sites configurés
-├── sites-enabled/      # Sites actifs (liens symboliques)
-└── nginx.conf         # Config nginx principale
-
-projects/
-└── monsite/           # Contenu web du projet
-    └── index.html
+# 6. Déployer
+docker compose up -d
 ```
 
-## 🛠️ Dépannage express
+---
+
+## 🗑️ Supprimer un projet (version courte)
+
+```bash
+# 1. Variable
+nom_projet="mon-projet"
+
+# 2. Arrêter containers
+docker compose stop "${nom_projet}_web" "${nom_projet}_db"
+docker compose rm -f "${nom_projet}_web" "${nom_projet}_db"
+
+# 3. Éditer docker-compose.yml - SUPPRIMER :
+#   - Section complète {nom_projet}_web
+#   - Section complète {nom_projet}_db  
+#   - Ligne {nom_projet}_net: (dans networks)
+#   ⚠️  NE PAS supprimer "traefik:" dans networks !
+
+# 4. Supprimer répertoires
+rm -rf "projects/$nom_projet" "data/$nom_projet"
+
+# 5. Redémarrer
+docker compose up -d --remove-orphans
+```
+
+---
+
+## 📋 Commandes utiles
+
+```bash
+# Lister projets actifs
+grep "container_name: .*_web" docker-compose.yml | sed 's/.*: \(.*\)_web/\1/'
+
+# État des containers
+docker compose ps
+
+# Logs temps réel
+docker compose logs -f
+
+# Reconstruire tout
+docker compose down && docker compose up -d --build
+
+# Tester un projet
+curl http://localhost/{nom-projet}/
+
+# Vérifier Traefik
+curl http://localhost:8080/api/overview
+```
+
+---
+
+## 🔧 Dépannage express
 
 | Problème | Solution |
 |----------|----------|
-| Port occupé | `./manage_projects.sh modify <nom> <nouveau_port>` |
-| Site inaccessible | `./manage_projects.sh site-enable <nom>` |
-| Nginx planté | `docker compose restart reverse_proxy` |
-| Config cassée | `docker exec reverse_proxy nginx -t` |
+| "mapping key already defined" | `docker compose config` pour vérifier YAML |
+| Container ne démarre pas | `docker compose logs {nom}_web` |
+| Page inaccessible | Vérifier routes Traefik sur :8080 |
+| Erreur réseau Docker | `docker network prune` |
+| Permissions fichiers | `sudo chown -R $USER:$USER projects/ data/` |
 
-## 📊 Statut des sites
+---
 
-- ✅ **✓ activé** : Site accessible via nginx
-- ❌ **✗ désactivé** : Site hors ligne (conteneur actif)
+## 📁 Template docker-compose.yml
 
-## 🎯 Workflow typique
+```yaml
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command: 
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports: ["80:80", "8080:8080"]
+    volumes: 
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks: [traefik]
+    labels: ["traefik.enable=true"]
 
-1. **Créer** : `./manage_projects.sh add monsite`
-2. **Vérifier** : `./manage_projects.sh site-list`
-3. **Accéder** : `http://localhost/monsite/`
-4. **Modifier** : Éditer `projects/monsite/index.html`
-5. **Maintenance** : `./manage_projects.sh site-disable monsite`
-6. **Relancer** : `./manage_projects.sh site-enable monsite`
+  # ← Ajouter les projets ICI
 
-## 🎪 Démo interactive
-
-```bash
-chmod +x demo.sh
-./demo.sh    # Démonstration guidée
+networks:
+  traefik:
+  # ← Ajouter les réseaux projets ICI
 ```

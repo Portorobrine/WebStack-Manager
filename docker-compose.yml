@@ -1,102 +1,20 @@
 services:
-
   traefik:
     image: traefik:v3.0
     container_name: traefik
-    command:
+    command: 
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Dashboard Traefik
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`localhost`) && PathPrefix(`/dashboard`)"
-      - "traefik.http.routers.dashboard.entrypoints=web"
-      - "traefik.http.routers.dashboard.service=api@internal"
-
-  homepage:
-    image: httpd:latest
-    container_name: homepage
-    volumes:
-      - ./homepage:/usr/local/apache2/htdocs
-    networks:
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.homepage.rule=Host(`localhost`) && Path(`/`)"
-      - "traefik.http.routers.homepage.entrypoints=web"
-      - "traefik.http.services.homepage.loadbalancer.server.port=80"
-
-  ippsi_web:
-    image: httpd:latest
-    container_name: ippsi_web
-    volumes:
-      - ./projects/ippsi:/usr/local/apache2/htdocs
-    networks:
-      - traefik
-      - ippsi_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ippsi.rule=Host(`localhost`) && PathPrefix(`/ippsi`)"
-      - "traefik.http.routers.ippsi.entrypoints=web"
-      - "traefik.http.services.ippsi.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.ippsi-stripprefix.stripprefix.prefixes=/ippsi"
-      - "traefik.http.routers.ippsi.middlewares=ippsi-stripprefix"
-      - "traefik.docker.network=projet-compose_traefik"
-
-  ippsi_db:
-    image: mariadb:latest
-    container_name: ippsi_db
-    environment:
-      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1
-      - MARIADB_DATABASE=ippsi
-    volumes:
-      - ippsi_data:/var/lib/mysql
-    networks:
-      - ippsi_net
+    ports: ["80:80", "8080:8080"]
+    volumes: 
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks: [traefik]
+    labels: ["traefik.enable=true"]
 
 
-  test_web:
-    image: httpd:latest
-    container_name: test_web
-    volumes:
-      - ./projects/test:/usr/local/apache2/htdocs
-    networks:
-      - traefik
-      - test_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.test.rule=Host(`localhost`) && PathPrefix(`/test`)"
-      - "traefik.http.routers.test.entrypoints=web"
-      - "traefik.http.services.test.loadbalancer.server.port=80"
-      - "traefik.docker.network=projet-compose_traefik"
 
-  test_db:
-    image: mariadb:latest
-    container_name: test_db
-    environment:
-      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1
-      - MARIADB_DATABASE=test
-    volumes:
-      - test_data:/var/lib/mysql
-    networks:
-      - test_net
-
-volumes:
-  test_data:
-  ippsi_data:
 
 networks:
-  test_net:
-  ippsi_net:
   traefik:
-    external: false
