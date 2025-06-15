@@ -5,7 +5,7 @@
 # Données des volumes Docker
 data/
 volumes/
-projects/
+projects/*
 
 # Logs
 *.log

@@ -175,12 +175,18 @@ EOF
   ${project_name}_web:\\
     image: httpd:latest\\
     container_name: ${project_name}_web\\
-    ports:\\
-      - \"${port_web}:80\"\\
     volumes:\\
       - ./projects/${project_name}:/usr/local/apache2/htdocs\\
     networks:\\
+      - traefik\\
       - ${project_name}_net\\
+    labels:\\
+      - \"traefik.enable=true\"\\
+      - \"traefik.http.routers.${project_name}.rule=Host(\\\`localhost\\\`) && PathPrefix(\\\`/${project_name}\\\`)\"\\
+      - \"traefik.http.routers.${project_name}.entrypoints=web\"\\
+      - \"traefik.http.services.${project_name}.loadbalancer.server.port=80\"\\
+      - \"traefik.http.middlewares.${project_name}-stripprefix.stripprefix.prefixes=/${project_name}\"\\
+      - \"traefik.http.routers.${project_name}.middlewares=${project_name}-stripprefix\"\\
 \\
   ${project_name}_db:\\
     image: mariadb:latest\\
@@ -216,20 +222,26 @@ EOF
   ${project_name}_net:" "$COMPOSE_FILE"
     fi
     
-    echo "Projet '$project_name' ajouté avec succès (port: $port_web)"
+    # Ajouter le réseau traefik s'il n'existe pas
+    if ! grep -q "^  traefik:" "$COMPOSE_FILE"; then
+        sed -i "/^networks:/a\\
+  traefik:\\
+    external: false" "$COMPOSE_FILE"
+    fi
+    
+    echo "Projet '$project_name' ajouté avec succès"
     echo "📁 Dossier du projet: $PROJECT_DIR"
     echo "📝 Fichier index.html créé automatiquement"
+    echo "🔄 Traefik auto-découverte configurée"
     
     # Lancer automatiquement docker compose si activé
     if [ "$AUTO_DEPLOY" = true ]; then
         echo "Lancement de l'infrastructure avec docker compose..."
         if docker compose up -d --remove-orphans; then
             echo "✅ Infrastructure déployée avec succès"
-            echo "🌐 Accès au projet: http://localhost:$port_web"
-            if grep -q "reverse_proxy:" "$COMPOSE_FILE"; then
-                echo "🔄 Reverse proxy: http://localhost/$project_name/"
-                echo "📋 Page d'accueil: http://localhost/"
-            fi
+            echo "🌐 Accès au projet: http://localhost/$project_name/"
+            echo "� Page d'accueil: http://localhost/"
+            echo "� Dashboard Traefik: http://localhost:8080/"
         else
             echo "❌ Erreur lors du déploiement de l'infrastructure"
             exit 1

@@ -1,23 +1,26 @@
 # WebStack-Manager
 
 ## Présentation
-WebStack-Manager est une solution complète pour moderniser l'infrastructure web de la société Company01. Ce projet permet de migrer facilement les services web et bases de données vers des conteneurs Docker modernes, avec un reverse proxy intelligent et une interface de gestion simplifiée.
+WebStack-Manager est une solution complète pour moderniser l'infrastructure web avec **Traefik** comme reverse proxy intelligent. Ce projet permet de déployer facilement des services web et bases de données avec une auto-découverte automatique via les labels Docker.
 
-**🆕 Nouveauté : Système de gestion automatisé des projets web avec reverse proxy intégré**
+**🆕 Nouveauté : Traefik avec auto-découverte par labels Docker**
 
 ---
 
-## Partie 1 : Infrastructure de base (Docker)
+## 🏗️ Architecture moderne avec Traefik
 
-### 1. Prérequis
-- Docker et Docker Compose installés sur la machine hôte
+### Avantages de Traefik
+- ✅ **Auto-découverte** : Configuration automatique via labels Docker
+- ✅ **Dashboard intégré** : Interface web pour monitoring
+- ✅ **SSL automatique** : Support Let's Encrypt (configurable)
+- ✅ **Gestion de route dynamique** : Pas de redémarrage nécessaire
+- ✅ **Load balancing** : Répartition de charge intégrée
 
-### 2. Architecture moderne
-- **Images officielles** : `httpd:latest` et `mariadb:latest`
-- **Organisation en dossiers** : Chaque projet dans `projects/nom_projet/`
-- **Gestion automatisée** : Script intelligent pour la gestion des projets
-- **Reverse proxy intelligent** : Nginx avec gestion sites-available/sites-enabled
-- **Contrôle granulaire** : Activation/désactivation des sites indépendamment des conteneurs
+### Composants
+- **Traefik** : Reverse proxy avec dashboard sur http://localhost:8080
+- **Homepage** : Page d'accueil moderne sur http://localhost/
+- **Projects** : Projets web accessibles via http://localhost/nom-projet/
+- **Auto-découverte** : Configuration automatique par labels
 
 ### 3. Gestion des projets avec le script `manage_projects.sh`
 
@@ -354,41 +357,80 @@ docker compose up -d reverse_proxy
 
 ---
 
-## 🆕 Fonctionnalités spéciales du système sites-available/sites-enabled
+## 🚀 Démarrage rapide
 
-### Page d'accueil intelligente
-La page d'accueil (`http://localhost/`) affiche automatiquement :
-- Liste de tous les projets avec liens directs
-- Statut d'activation de chaque site (✓ activé / ✗ désactivé)
-- Ports directs pour l'accès aux conteneurs
-- Lien vers la page de statut détaillée
-
-### Gestion flexible des sites
+### 1. Cloner le projet
 ```bash
-# Scénario : Maintenance d'un site
-./manage_projects.sh site-disable boutique    # Site hors ligne
-# Le conteneur continue de tourner, seul nginx ne le sert plus
-
-./manage_projects.sh site-enable boutique     # Remise en ligne
-# Retour immédiat sans redémarrage de conteneur
+git clone https://github.com/USERNAME/WebStack-Manager.git
+cd WebStack-Manager
 ```
 
-### Double accès aux sites
-Chaque projet est accessible via :
-1. **Sous-répertoire** : `http://localhost/monsite/`
-2. **Sous-domaine** : `http://monsite.localhost/` (si configuré dans `/etc/hosts`)
-3. **Port direct** : `http://localhost:8080`
+### 2. Lancer l'infrastructure
+```bash
+# Démarrer Traefik et la page d'accueil
+docker compose up -d
 
-### Configuration automatique
-- Création automatique des sites lors de l'ajout de projets
-- Mise à jour de la page d'accueil à chaque modification
-- Rechargement automatique de nginx
-- Liens symboliques gérés automatiquement
+# Vérifier que tout fonctionne
+curl http://localhost/
+```
 
-### Architecture évolutive
-Le système permet d'ajouter facilement :
-- SSL/TLS avec Let's Encrypt
-- Load balancing entre plusieurs conteneurs
-- Authentification par site
-- Limitation de débit
-- Headers de sécurité personnalisés
+### 3. Ajouter un nouveau projet
+```bash
+# Ajouter un projet (auto-découverte Traefik)
+./manage_projects.sh add mon-projet
+
+# Le projet sera accessible sur http://localhost/mon-projet/
+```
+
+## 🌐 Accès aux services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| 🏠 **Page d'accueil** | http://localhost/ | Interface principale |
+| 🚀 **Dashboard Traefik** | http://localhost:8080/ | Administration Traefik |
+| 📁 **Projets** | http://localhost/nom-projet/ | Projets web via auto-découverte |
+
+## 📋 Gestion des projets
+
+### Commandes disponibles
+```bash
+# Ajouter un nouveau projet
+./manage_projects.sh add nom-projet
+
+# Supprimer un projet
+./manage_projects.sh remove nom-projet
+
+# Lister les projets
+./manage_projects.sh list
+
+# Aide complète
+./manage_projects.sh --help
+```
+
+### Exemple complet
+```bash
+# 1. Ajouter un projet "blog"
+./manage_projects.sh add blog
+
+# 2. Le projet est automatiquement :
+#    - Créé dans projects/blog/
+#    - Configuré avec labels Traefik
+#    - Accessible sur http://localhost/blog/
+
+# 3. Modifier le contenu
+echo "<h1>Mon Blog</h1>" > projects/blog/index.html
+```
+
+## 🔧 Configuration Traefik
+
+Les projets sont automatiquement configurés avec ces labels :
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.projet.rule=Host(`localhost`) && PathPrefix(`/projet`)"
+  - "traefik.http.routers.projet.entrypoints=web"
+  - "traefik.http.services.projet.loadbalancer.server.port=80"
+  - "traefik.http.middlewares.projet-stripprefix.stripprefix.prefixes=/projet"
+  - "traefik.http.routers.projet.middlewares=projet-stripprefix"
+```
