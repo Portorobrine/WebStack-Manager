@@ -187,6 +187,7 @@ EOF
       - \"traefik.http.services.${project_name}.loadbalancer.server.port=80\"\\
       - \"traefik.http.middlewares.${project_name}-stripprefix.stripprefix.prefixes=/${project_name}\"\\
       - \"traefik.http.routers.${project_name}.middlewares=${project_name}-stripprefix\"\\
+      - \"traefik.docker.network=projet-compose_traefik\"\\
 \\
   ${project_name}_db:\\
     image: mariadb:latest\\

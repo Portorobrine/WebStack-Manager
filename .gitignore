@@ -37,3 +37,10 @@ credentials/
 
 docker-compose.yml
 Projet - Conteneurisation Hybride.pdf
+# Traefik
+traefik.log
+acme.json
+
+# Sauvegardes de migration
+*.backup
+nginx_config.backup/

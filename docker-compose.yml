@@ -51,6 +51,7 @@ services:
       - "traefik.http.services.ippsi.loadbalancer.server.port=80"
       - "traefik.http.middlewares.ippsi-stripprefix.stripprefix.prefixes=/ippsi"
       - "traefik.http.routers.ippsi.middlewares=ippsi-stripprefix"
+      - "traefik.docker.network=projet-compose_traefik"
 
   ippsi_db:
     image: mariadb:latest
@@ -63,10 +64,39 @@ services:
     networks:
       - ippsi_net
 
+
+  test_web:
+    image: httpd:latest
+    container_name: test_web
+    volumes:
+      - ./projects/test:/usr/local/apache2/htdocs
+    networks:
+      - traefik
+      - test_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.test.rule=Host(`localhost`) && PathPrefix(`/test`)"
+      - "traefik.http.routers.test.entrypoints=web"
+      - "traefik.http.services.test.loadbalancer.server.port=80"
+      - "traefik.docker.network=projet-compose_traefik"
+
+  test_db:
+    image: mariadb:latest
+    container_name: test_db
+    environment:
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1
+      - MARIADB_DATABASE=test
+    volumes:
+      - test_data:/var/lib/mysql
+    networks:
+      - test_net
+
 volumes:
+  test_data:
   ippsi_data:
 
 networks:
+  test_net:
   ippsi_net:
   traefik:
     external: false
