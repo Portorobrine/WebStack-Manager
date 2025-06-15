@@ -5,6 +5,7 @@
 # Données des volumes Docker
 data/
 volumes/
+projects/
 
 # Logs
 *.log
@@ -32,3 +33,7 @@ mariadb_data/
 # Fichiers de configuration sensibles
 secrets/
 credentials/
+
+
+docker-compose.yml
+Projet - Conteneurisation Hybride.pdf
