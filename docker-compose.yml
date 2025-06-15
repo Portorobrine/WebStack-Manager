@@ -1,0 +1,42 @@
+services:
+
+  reverse_proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: reverse_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx_config:/etc/nginx/conf.d
+    networks:
+      - proxy_net
+
+
+  ippsi_web:
+    image: httpd:latest
+    container_name: ippsi_web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./projects/ippsi:/usr/local/apache2/htdocs
+    networks:
+      - ippsi_net
+
+  ippsi_db:
+    image: mariadb:latest
+    container_name: ippsi_db
+    environment:
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1
+      - MARIADB_DATABASE=ippsi
+    volumes:
+      - ippsi_data:/var/lib/mysql
+    networks:
+      - ippsi_net
+
+volumes:
+  ippsi_data:
+
+networks:
+  ippsi_net:
+  proxy_net:

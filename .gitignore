@@ -1,0 +1,34 @@
+# Fichiers Docker
+.env
+.env.local
+
+# Données des volumes Docker
+data/
+volumes/
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*~
+
+# Système
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Données des bases de données (si exposées localement)
+mysql_data/
+mariadb_data/
+
+# Fichiers de configuration sensibles
+secrets/
+credentials/
