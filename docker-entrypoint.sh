@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Définir des valeurs par défaut si les variables ne sont pas définies
+MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-""}
+MARIADB_DATABASE=${MARIADB_DATABASE:-""}
+MARIADB_USER=${MARIADB_USER:-""}
+MARIADB_PASSWORD=${MARIADB_PASSWORD:-""}
+
 # Initialiser la base de données si elle n'existe pas
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "Initialisation de la base de données MariaDB..."
@@ -16,21 +22,23 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     done
 
     # Configuration initiale
-    mysql --socket=/tmp/mysql_init.sock <<-EOSQL
-        DELETE FROM mysql.user WHERE user='';
-        DELETE FROM mysql.user WHERE user='root' AND host NOT IN ('localhost', '127.0.0.1', '::1');
-        DROP DATABASE IF EXISTS test;
-        DELETE FROM mysql.db WHERE db='test' OR db='test\\_%';
+    if [ -n "$MARIADB_ROOT_PASSWORD" ]; then
+        mysql --socket=/tmp/mysql_init.sock <<-EOSQL
+            DELETE FROM mysql.user WHERE user='';
+            DELETE FROM mysql.user WHERE user='root' AND host NOT IN ('localhost', '127.0.0.1', '::1');
+            DROP DATABASE IF EXISTS test;
+            DELETE FROM mysql.db WHERE db='test' OR db='test\\_%';
 
-        SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MARIADB_ROOT_PASSWORD}');
-        GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}' WITH GRANT OPTION;
+            SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MARIADB_ROOT_PASSWORD}');
+            GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}' WITH GRANT OPTION;
 
-        CREATE DATABASE IF NOT EXISTS ${MARIADB_DATABASE};
-        CREATE USER IF NOT EXISTS '${MARIADB_USER}'@'%' IDENTIFIED BY '${MARIADB_PASSWORD}';
-        GRANT ALL PRIVILEGES ON ${MARIADB_DATABASE}.* TO '${MARIADB_USER}'@'%';
+            $([ -n "$MARIADB_DATABASE" ] && echo "CREATE DATABASE IF NOT EXISTS ${MARIADB_DATABASE};")
+            $([ -n "$MARIADB_USER" ] && [ -n "$MARIADB_PASSWORD" ] && echo "CREATE USER IF NOT EXISTS '${MARIADB_USER}'@'%' IDENTIFIED BY '${MARIADB_PASSWORD}';")
+            $([ -n "$MARIADB_USER" ] && [ -n "$MARIADB_DATABASE" ] && echo "GRANT ALL PRIVILEGES ON ${MARIADB_DATABASE}.* TO '${MARIADB_USER}'@'%';")
 
-        FLUSH PRIVILEGES;
+            FLUSH PRIVILEGES;
 EOSQL
+    fi
 
     # Arrêter MariaDB temporaire
     mysqladmin --socket=/tmp/mysql_init.sock shutdown
