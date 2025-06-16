@@ -13,9 +13,6 @@ Script Bash simple pour créer et gérer des projets web avec Traefik comme reve
 # Créer un projet
 ./manage_projects.sh add mon-projet
 
-# Lister les projets
-./manage_projects.sh list
-
 # Supprimer un projet
 ./manage_projects.sh remove mon-projet
 ```
@@ -38,3 +35,4 @@ Chaque projet contient :
 - `manage_projects.sh` - Script principal
 - `docker-compose.yml` - Configuration automatique
 - `projects/` - Dossiers des projets
+- 'data/' - Dossier pour les données persistantes

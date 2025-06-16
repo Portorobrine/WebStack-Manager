@@ -1,11 +1,9 @@
 #!/bin/bash
-# Script minimal de gestion de projets avec Traefik
 set -e
 
 COMPOSE_FILE="docker-compose.yml"
 PROJECTS_DIR="projects"
 
-# Initialiser si nécessaire
 init() {
   [ -f "$COMPOSE_FILE" ] && grep -q "traefik:" "$COMPOSE_FILE" && return
   cat > "$COMPOSE_FILE" << 'EOF'
@@ -29,25 +27,15 @@ networks:
 EOF
 }
 
-# Validation
 validate() { 
   [ -z "$1" ] && { echo "❌ Nom requis"; exit 1; } 
   echo "$1" | tr '[:upper:]' '[:lower:]'
 }
 
-# Vérifier existence
 exists() { 
   [ -f "$COMPOSE_FILE" ] && grep -q "  $1_web:" "$COMPOSE_FILE"
 }
 
-# Lister projets
-list() {
-  echo "📋 Projets:"
-  [ ! -f "$COMPOSE_FILE" ] && echo "  Aucun" && return
-  grep "container_name: .*_web" "$COMPOSE_FILE" 2>/dev/null | sed 's/.*: \(.*\)_web/  - \1/' || echo "  Aucun"
-}
-
-# Ajouter projet
 add() {
   local name=$(validate "$1")
   init
@@ -55,7 +43,7 @@ add() {
   
   echo "➕ Création '$name'..."
   mkdir -p "$PROJECTS_DIR/$name"
-  echo "<!DOCTYPE html><html><head><title>$name</title></head><body><h1>Projet $name</h1><p>URL: http://localhost/$name/</p></body></html>" > "$PROJECTS_DIR/$name/index.html"
+  echo "<!DOCTYPE html><html><head><title>$name</title></head><body><h1>Projet $name</h1></body></html>" > "$PROJECTS_DIR/$name/index.html"
   
   mkdir -p "data/$name"
   
@@ -96,7 +84,6 @@ add() {
   docker compose up -d --remove-orphans
 }
 
-# Supprimer projet
 remove() {
   local name=$(validate "$1")
   exists "$name" || { echo "❌ '$name' inexistant"; exit 1; }
@@ -133,6 +120,5 @@ remove() {
 case "$1" in
   add) add "$2" ;;
   remove) remove "$2" ;;
-  list) list ;;
-  *) echo "Usage: $0 {add|remove|list} [nom]"; exit 1 ;;
+  *) echo "Usage: $0 {add|remove} [nom]"; exit 1 ;;
 esac
