@@ -1,4 +1,4 @@
-# Procédure Docker Compose - WebStack Manager
+# Procédure Projet-compose
 
 ## Ajouter un projet
 
@@ -29,6 +29,7 @@ networks:
 - Ne pas oublier d'importer les dockerfiles dans le même dossier que le `docker-compose.yml` :
   - `Dockerfile.httpd` pour le serveur web
   - `Dockerfile.mariadb` pour la base de données
+  - `docker-entrypoint.sh` dépendence pour Dockerfile.mariadb
 
 ### 1. Préparer le projet
 ```bash

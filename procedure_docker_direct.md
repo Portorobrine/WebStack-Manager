@@ -1,13 +1,14 @@
-# Procédure Docker Direct - Gestion de Projets Web
+# Procédure Docker - Gestion de Projets Web
 
 ## Ajouter un projet
 
 ### 0. Prérequis
-- - Importer les dockerfiles dans le même dossier que le `docker-compose.yml` :
+- Ne pas oublier d'importer les dockerfiles dans le même dossier que le `docker-compose.yml` :
   - `Dockerfile.httpd` pour le serveur web
   - `Dockerfile.mariadb` pour la base de données
+  - `docker-entrypoint.sh` dépendence pour Dockerfile.mariadb
 
-### 1. Démarrer Traefik (si pas déjà fait)
+### 1. Démarrer Traefik
 ```bash
 # Créer le réseau
 docker network create traefik
