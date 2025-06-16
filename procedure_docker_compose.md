@@ -1,37 +1,31 @@
-# Procédure Docker Compose - Gestion de Projets Web
-
-## 📋 Vue d'ensemble
-
-Cette stack utilise **Traefik** comme reverse proxy pour gérer automatiquement le routage des projets web. Traefik permet d'accéder à chaque projet via une URL dédiée sans conflit de ports.
-
-## 🌐 Traefik - Reverse Proxy
-
-### Configuration
-- **Port web** : 80 (accès aux projets)
-- **Dashboard** : http://localhost:8080
-- **Réseau** : `traefik` (réseau partagé)
-
-### Fonctionnalités
-- **Routage automatique** : Chaque projet est accessible via `localhost/nom-projet`
-- **Discovery Docker** : Détection automatique des nouveaux containers
-- **Load balancing** : Répartition de charge intégrée
-- **Dashboard web** : Interface de monitoring
-
-### Accès aux projets
-Tous les projets sont accessibles via :
-```
-http://localhost/nom-du-projet/
-```
-
-### Dashboard Traefik
-Surveillez vos services en temps réel :
-```
-http://localhost:8080
-```
-
----
+# Procédure Docker Compose - WebStack Manager
 
 ## 🚀 Ajouter un projet
+
+### 0. Prérequis
+créer un fichier `docker-compose.yml` à la racine du projet avec le contenu suivant :
+
+```yaml
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command: 
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports: ["80:80", "8080:8080"]
+    volumes: 
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks: [traefik]
+    labels: ["traefik.enable=true"]
+
+networks:
+  traefik:
+
+```
 
 ### 1. Préparer le projet
 ```bash
@@ -85,72 +79,10 @@ docker compose up -d
 
 **✅ Accès : http://localhost/ipssi/**
 
----
 
-## 🗑️ Supprimer un projet
+## ❌ ARRÊTER L'INFRASTRUCTURE
 
-### 1. Arrêter les services
 ```bash
-docker compose stop ipssi_web ipssi_db
-docker compose rm -f ipssi_web ipssi_db
+# Arrêter tous les services
+docker compose down
 ```
-
-### 2. Supprimer du docker-compose.yml
-- Supprimer les sections `ipssi_web:` et `ipssi_db:`
-- Supprimer `ipssi_net:` des networks
-
-### 3. Nettoyer les fichiers
-```bash
-rm -rf projects/ipssi data/ipssi
-docker compose up -d --remove-orphans
-```
-
----
-
-## ⚙️ Gestion de Traefik
-
-### Démarrer/Redémarrer Traefik
-```bash
-# Démarrer tous les services (y compris Traefik)
-docker compose up -d
-
-# Redémarrer uniquement Traefik
-docker compose restart traefik
-```
-
-### Vérifier l'état de Traefik
-```bash
-# Status des containers
-docker compose ps
-
-# Logs de Traefik
-docker compose logs traefik
-
-# Logs en temps réel
-docker compose logs -f traefik
-```
-
-### Configuration des labels Traefik pour un nouveau projet
-Pour chaque nouveau projet, utilisez ces labels dans votre `docker-compose.yml` :
-
-```yaml
-labels:
-  - traefik.enable=true
-  - traefik.http.routers.PROJECT_NAME.rule=Host(`localhost`) && PathPrefix(`/PROJECT_NAME`)
-  - traefik.http.routers.PROJECT_NAME.entrypoints=web
-  - traefik.http.services.PROJECT_NAME.loadbalancer.server.port=80
-  - traefik.http.middlewares.PROJECT_NAME-strip.stripprefix.prefixes=/PROJECT_NAME
-  - traefik.http.routers.PROJECT_NAME.middlewares=PROJECT_NAME-strip
-  - traefik.docker.network=webstack-manager_traefik
-```
-
-### Réseau Traefik
-Chaque projet web doit être connecté au réseau `traefik` :
-```yaml
-networks: [traefik, project_specific_net]
-```
-
-### Troubleshooting
-- **Service non accessible** : Vérifiez le dashboard Traefik (http://localhost:8080)
-- **Erreur de routage** : Vérifiez les labels Traefik du container
-- **Conflit de noms** : Utilisez des noms uniques pour les routers et services
