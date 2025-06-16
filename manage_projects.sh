@@ -27,21 +27,13 @@ networks:
 EOF
 }
 
-validate() { 
-  [ -z "$1" ] && { echo "❌ Nom requis"; exit 1; } 
-  echo "$1" | tr '[:upper:]' '[:lower:]'
-}
-
-exists() { 
-  [ -f "$COMPOSE_FILE" ] && grep -q "  $1_web:" "$COMPOSE_FILE"
-}
-
 add() {
-  local name=$(validate "$1")
-  init
-  exists "$name" && { echo "❌ '$name' existe"; exit 1; }
+  local name="$1"
+  [ -z "$name" ] && { echo "Nom du projet requis"; exit 1; }
   
-  echo "➕ Création '$name'..."
+  init
+
+  echo "Création '$name'..."
   mkdir -p "$PROJECTS_DIR/$name"
   echo "<!DOCTYPE html><html><head><title>$name</title></head><body><h1>Projet $name</h1></body></html>" > "$PROJECTS_DIR/$name/index.html"
   
@@ -64,7 +56,7 @@ add() {
     print "      - traefik.http.services." name ".loadbalancer.server.port=80"
     print "      - traefik.http.middlewares." name "-strip.stripprefix.prefixes=/" name
     print "      - traefik.http.routers." name ".middlewares=" name "-strip"
-    print "      - traefik.docker.network=projet-compose_traefik"
+    print "      - traefik.docker.network=webstack-manager_traefik"
     print ""
     print "  " name "_db:"
     print "    build:"
@@ -79,26 +71,28 @@ add() {
   /^networks:/ { print $0; getline; print; print "  " name "_net:"; next }
   { print }
   ' "$COMPOSE_FILE" > /tmp/compose && mv /tmp/compose "$COMPOSE_FILE"
-  
-  echo "✅ '$name' créé - http://localhost/$name/"
+  # Ajouter le réseau spécifique au projet
+  echo "'$name' créé - http://localhost/$name/"
   docker compose up -d --remove-orphans
 }
 
 remove() {
-  local name=$(validate "$1")
-  exists "$name" || { echo "❌ '$name' inexistant"; exit 1; }
+  local name="$1"
+  [ -z "$name" ] && { echo "Nom du projet requis"; exit 1; }
   
-  echo -n "⚠️  Supprimer '$name' ? (o/N) "
-  read confirm
-  [[ ! $confirm =~ ^[Oo]$ ]] && exit 0
+  # Vérifier si le projet existe
+  if ! grep -q "${name}_web:" "$COMPOSE_FILE" 2>/dev/null; then
+    echo "Le projet '$name' n'existe pas"
+    return 0
+  fi
   
-  echo "🗑️  Suppression '$name'..."
-  docker compose stop "${name}_web" "${name}_db" 2>/dev/null || true
-  docker compose rm -f "${name}_web" "${name}_db" 2>/dev/null || true
+  echo "Suppression '$name'..."
+  docker compose stop "${name}_web" "${name}_db"
+  docker compose rm -f "${name}_web" "${name}_db"
   
   awk -v name="$name" '
   BEGIN { skip=0 }
-  # Début d un service du projet à supprimer
+  # Début dun service du projet à supprimer
   $0 ~ "^  " name "_(web|db):" { skip=1; next }
   # Fin du service : nouvelle ligne de service ou section networks
   skip && ($0 ~ /^  [a-zA-Z][^:]*:/ || $0 ~ /^[a-zA-Z]/) { skip=0 }
@@ -110,10 +104,10 @@ remove() {
   { print }
   ' "$COMPOSE_FILE" > /tmp/compose && mv /tmp/compose "$COMPOSE_FILE"
   
-  rm -rf "$PROJECTS_DIR/$name" 2>/dev/null || true
-  rm -rf "data/$name" 2>/dev/null || true
+  rm -rf "$PROJECTS_DIR/$name"
+  rm -rf "data/$name"
   
-  echo "✅ '$name' supprimé"
+  echo "'$name' supprimé"
   docker compose up -d --remove-orphans
 }
 
