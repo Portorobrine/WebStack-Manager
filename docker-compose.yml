@@ -15,31 +15,32 @@ services:
 
 
 
-  hello_web:
+
+  ipssi_web:
     build:
       context: .
       dockerfile: Dockerfile.httpd
-    container_name: hello_web
-    volumes: ["./projects/hello:/var/www/html"]
-    networks: [traefik, hello_net]
+    container_name: ipssi_web
+    volumes: ["./projects/ipssi:/var/www/html"]
+    networks: [traefik, ipssi_net]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.hello.rule=Host(`localhost`) && PathPrefix(`/hello`)
-      - traefik.http.routers.hello.entrypoints=web
-      - traefik.http.services.hello.loadbalancer.server.port=80
-      - traefik.http.middlewares.hello-strip.stripprefix.prefixes=/hello
-      - traefik.http.routers.hello.middlewares=hello-strip
+      - traefik.http.routers.ipssi.rule=Host(`localhost`) && PathPrefix(`/ipssi`)
+      - traefik.http.routers.ipssi.entrypoints=web
+      - traefik.http.services.ipssi.loadbalancer.server.port=80
+      - traefik.http.middlewares.ipssi-strip.stripprefix.prefixes=/ipssi
+      - traefik.http.routers.ipssi.middlewares=ipssi-strip
       - traefik.docker.network=webstack-manager_traefik
 
-  hello_db:
+  ipssi_db:
     build:
       context: .
       dockerfile: Dockerfile.mariadb
-    container_name: hello_db
-    environment: [MYSQL_ALLOW_EMPTY_PASSWORD=1, MYSQL_DATABASE=hello]
-    volumes: ["./data/hello:/var/lib/mysql"]
-    networks: [hello_net]
+    container_name: ipssi_db
+    environment: [MYSQL_ALLOW_EMPTY_PASSWORD=1, MYSQL_DATABASE=ipssi]
+    volumes: ["./data/ipssi:/var/lib/mysql"]
+    networks: [ipssi_net]
 
 networks:
   traefik:
-  hello_net:
+  ipssi_net:

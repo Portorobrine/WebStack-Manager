@@ -1,162 +1,177 @@
 # WebStack Manager
 
-Gestionnaire de projets web avec support Docker CLI et Docker Compose, incluant Apache/PHP et MariaDB, avec Traefik comme reverse proxy.
+Un gestionnaire de projets web avec stack LAMP (Linux, Apache, MariaDB, PHP) utilisant Docker et Traefik comme reverse proxy.
 
-## 🎯 Fonctionnalités
+## 🚀 Fonctionnalités
 
-- **Support Docker CLI et Docker Compose** : Deux scripts de gestion distincts
-- **Stack LAMP complète** : Apache, PHP, MariaDB intégrés
-- **Reverse Proxy Traefik** : Gestion automatique des domaines et SSL
-- **Isolation des projets** : Chaque projet a son propre réseau et base de données
-- **Gestion du cycle de vie** : Création, suppression et nettoyage automatiques
+- Création et suppression rapide de projets web
+- Stack LAMP complète (Apache + MariaDB + PHP)
+- Reverse proxy automatique avec Traefik
+- Deux modes de gestion : Docker Compose ou commandes Docker directes
+- Isolation des projets avec réseaux Docker dédiés
+- Accès web via `http://localhost/nom-projet/`
 
 ## 📋 Prérequis
 
-- Docker installé et fonctionnel
-- Ports 80 et 8080 libres
-- Système Linux/macOS avec bash ou zsh
+- Docker
+- Docker Compose (pour le mode compose)
+- Bash
 
-## 🚀 Utilisation
+## 🛠️ Installation
 
-### Avec Docker CLI (recommandé)
+1. Cloner le projet :
 ```bash
-# Créer un projet
-./manage-without-compose.sh add mon-projet
-
-# Créer un autre projet
-./manage-without-compose.sh add blog
-
-# Supprimer un projet
-./manage-without-compose.sh remove mon-projet
+git clone <repo-url>
+cd WebStack-Manager
 ```
 
-### Avec Docker Compose (alternatif)
+2. Rendre les scripts exécutables :
 ```bash
-# Créer un projet
-./manage_projects.sh add mon-projet
+chmod +x manage_projects.sh manage-without-compose.sh
+```
 
-# Créer un autre projet
-./manage_projects.sh add blog
+## 🎯 Utilisation
+
+### Mode Docker Compose (Recommandé)
+
+```bash
+# Créer un nouveau projet
+./manage_projects.sh add mon-projet
 
 # Supprimer un projet
 ./manage_projects.sh remove mon-projet
 ```
 
-## 🌐 Accès aux Services
-
-- **Site web** : `http://localhost/nom-projet/` (via Traefik)
-- **Dashboard Traefik** : `http://localhost:8080`
-
-## � Routing Traefik
-
-Tous les projets sont accessibles uniquement via Traefik :
+### Mode Docker Direct
 
 ```bash
-# Créer un projet
-./manage-without-compose.sh add mon-site
+# Créer un nouveau projet
+./manage-without-compose.sh add mon-projet
 
-# Accès via Traefik
-curl http://localhost/mon-site/
+# Supprimer un projet
+./manage-without-compose.sh remove mon-projet
 ```
 
-### Exemples d'accès
-- **Projet "blog"** : `http://localhost/blog/`
-- **Projet "shop"** : `http://localhost/shop/`
-- **Dashboard Traefik** : `http://localhost:8080`
-
-## 🗃️ Base de Données
-
-Chaque projet dispose de sa propre instance MariaDB avec :
-
-- **Host** : `nom-projet_db`
-- **Base de données** : `webapp`
-- **Utilisateur** : `webuser`
-- **Mot de passe** : `webpassword`
-- **Root password** : `rootpassword`
-
-### Exemple de connexion PHP
-```php
-<?php
-$pdo = new PDO("mysql:host=hello_db;dbname=webapp", "webuser", "webpassword");
-?>
-```
-
-## 📁 Structure des Projets
+## 📁 Structure du projet
 
 ```
 WebStack-Manager/
-├── manage-without-compose.sh   # Script Docker CLI
-├── manage_projects.sh         # Script Docker Compose
-├── docker-entrypoint.sh       # Script d'entrée MariaDB
-├── Dockerfile.httpd          # Image Apache/PHP
-├── Dockerfile.mariadb        # Image MariaDB personnalisée
-├── docker-compose.yml        # Configuration Docker Compose
-└── projects/
-    └── nom-projet/
-        ├── index.html        # Page d'accueil par défaut
-        └── *.php            # Fichiers PHP du projet
+├── README.md
+├── docker-compose.yml          # Généré automatiquement
+├── .env                        # Configuration de la base de données
+├── manage_projects.sh          # Script principal (Docker Compose)
+├── manage-without-compose.sh   # Script alternatif (Docker direct)
+├── docker-entrypoint.sh        # Script d'initialisation MariaDB
+├── Dockerfile.httpd            # Image Apache + PHP
+├── Dockerfile.mariadb          # Image MariaDB personnalisée
+├── projects/                   # Fichiers web des projets
+│   └── [nom-projet]/
+│       └── index.html
+└── data/                       # Données des bases de données
+    └── [nom-projet]/
+        └── [fichiers-mysql]
 ```
 
-## 🔧 Concepts Techniques Expliqués
+## 🌐 Accès aux services
 
-### Docker vs LXC
-- **Docker** : Conteneurisation légère au niveau applicatif
-- **LXC** : Conteneurisation au niveau système (plus proche des VMs)
-- Docker utilise des namespaces et cgroups pour l'isolation
+- **Projets web** : `http://localhost/nom-projet/`
+- **Dashboard Traefik** : `http://localhost:8080`
 
-### Différences Docker CLI vs Docker Compose
-- **Docker CLI** : Commandes directes, plus de contrôle, parfait pour l'apprentissage
-- **Docker Compose** : Configuration déclarative, plus simple pour les stacks complexes
+## 🔧 Configuration
 
-### Scripts Bash Utilisés
+### Variables d'environnement (.env)
 
-#### Redirections
-- `2>/dev/null` : Redirige stderr vers /dev/null (supprime les erreurs)
-- `command || true` : Ignore les codes d'erreur (garde clause)
+```properties
+MARIADB_ROOT_PASSWORD=votre_mot_de_passe_root_super_secret
+MARIADB_DATABASE=webapp
+MARIADB_USER=webuser
+MARIADB_PASSWORD=votre_mot_de_passe_utilisateur_secret
+DB_HOST=localhost
+DB_PORT=3306
+```
 
-#### Variables et Fonctions
-- `$1, $2, etc.` : Arguments positionnels
-- `return` vs `exit` : return sort de la fonction, exit sort du script
-- `$(command)` : Substitution de commande
+### Connexion à la base de données depuis PHP
 
-#### Outils de traitement de texte
-- `awk` : Traitement de colonnes et patterns
-- `grep` : Recherche de motifs
-- `sed` : Édition de flux
+```php
+<?php
+$host = 'nom-projet_db';  // Nom du conteneur MariaDB
+$dbname = 'nom-projet';   // Nom de la base de données
+$username = 'root';
+$password = '';           // Mot de passe vide par défaut
 
-## 🚨 Diagnostic et Dépannage
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    echo "Connexion réussie !";
+} catch(PDOException $e) {
+    echo "Erreur : " . $e->getMessage();
+}
+?>
+```
 
-### Vérifier l'état des conteneurs
+## 📝 Exemples
+
+### Créer un projet "blog"
+
 ```bash
-docker ps -a
+./manage_projects.sh add blog
 ```
 
-### Consulter les logs
+Cela crée :
+- Un conteneur Apache + PHP accessible via `http://localhost/blog/`
+- Un conteneur MariaDB avec une base de données "blog"
+- Les répertoires `projects/blog/` et `data/blog/`
+- Un fichier `projects/blog/index.html` de base
+
+### Développer le projet
+
+1. Modifier les fichiers dans `projects/blog/`
+2. Les changements sont visibles immédiatement
+3. Accéder à la base de données via le nom d'hôte `blog_db`
+
+## 🐳 Services Docker
+
+### Traefik (Reverse Proxy)
+- **Image** : `traefik:v3.0`
+- **Ports** : 80 (web), 8080 (dashboard)
+- **Réseau** : `traefik`
+
+### Apache + PHP (par projet)
+- **Image** : Basée sur `ubuntu:22.04`
+- **Packages** : `apache2`, `php`, `libapache2-mod-php`, `php-mysql`
+- **Port** : 80 (interne)
+- **Réseaux** : `traefik`, `[projet]_net`
+
+### MariaDB (par projet)
+- **Image** : Basée sur `ubuntu:22.04`
+- **Package** : `mariadb-server`
+- **Port** : 3306 (interne)
+- **Réseau** : `[projet]_net`
+
+## 🔍 Dépannage
+
+### Vérifier les conteneurs actifs
+```bash
+docker ps
+```
+
+### Voir les logs d'un projet
 ```bash
 docker logs nom-projet_web
 docker logs nom-projet_db
 ```
 
-### Tester la connectivité base de données
+### Accéder au conteneur
 ```bash
-docker exec nom-projet_db mysql -u webuser -pwebpassword -e "SHOW DATABASES;"
+docker exec -it nom-projet_web bash
+docker exec -it nom-projet_db bash
 ```
 
-### Nettoyer complètement
+### Redémarrer les services
 ```bash
-# Arrêter tous les conteneurs
-docker stop $(docker ps -q)
-
-# Supprimer tous les conteneurs
-docker rm $(docker ps -aq)
-
-# Supprimer les réseaux orphelins
-docker network prune -f
+docker compose restart
 ```
 
-## 📚 Ressources et Documentation
+## 📄 Licence
 
-- [Documentation Docker](https://docs.docker.com/)
-- [Traefik Documentation](https://doc.traefik.io/traefik/)
-- [Guide MariaDB](https://mariadb.org/documentation/)
-- [PHP MySQL Extension](https://www.php.net/manual/en/book.pdo.php)
+Ce projet est sous licence libre. Vous pouvez l'utiliser, le modifier et le redistribuer selon vos besoins.

@@ -3,6 +3,7 @@ set -e
 
 COMPOSE_FILE="docker-compose.yml"
 PROJECTS_DIR="projects"
+DATA_DIR="data"
 
 init() {
   [ -f "$COMPOSE_FILE" ] && grep -q "traefik:" "$COMPOSE_FILE" && return
@@ -44,7 +45,7 @@ add() {
   mkdir -p "$PROJECTS_DIR/$name"
   echo "<!DOCTYPE html><html><head><title>$name</title></head><body><h1>Projet $name</h1></body></html>" > "$PROJECTS_DIR/$name/index.html"
   
-  mkdir -p "data/$name"
+  mkdir -p "$DATA_DIR/$name"
   
   awk -v name="$name" '
   /^networks:/ {
@@ -111,7 +112,7 @@ remove() {
   ' "$COMPOSE_FILE" > /tmp/compose && mv /tmp/compose "$COMPOSE_FILE"
   
   rm -rf "$PROJECTS_DIR/$name"
-  rm -rf "data/$name"
+  rm -rf "$DATA_DIR/$name"
   
   echo "'$name' supprimé"
   docker compose up -d --remove-orphans
