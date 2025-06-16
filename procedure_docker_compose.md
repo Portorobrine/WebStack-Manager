@@ -1,9 +1,9 @@
 # Procédure Docker Compose - WebStack Manager
 
-## 🚀 Ajouter un projet
+## Ajouter un projet
 
 ### 0. Prérequis
-créer un fichier `docker-compose.yml` à la racine du projet avec le contenu suivant :
+- créer un fichier `docker-compose.yml` à la racine du projet avec le contenu suivant :
 
 ```yaml
 
@@ -26,6 +26,9 @@ networks:
   traefik:
 
 ```
+- Ne pas oublier d'importer les dockerfiles dans le même dossier que le `docker-compose.yml` :
+  - `Dockerfile.httpd` pour le serveur web
+  - `Dockerfile.mariadb` pour la base de données
 
 ### 1. Préparer le projet
 ```bash
@@ -77,12 +80,5 @@ Ajouter dans la section `networks:` :
 docker compose up -d
 ```
 
-**✅ Accès : http://localhost/ipssi/**
+**Accès : http://localhost/ipssi/**
 
-
-## ❌ ARRÊTER L'INFRASTRUCTURE
-
-```bash
-# Arrêter tous les services
-docker compose down
-```

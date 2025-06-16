@@ -1,6 +1,11 @@
 # Procédure Docker Direct - Gestion de Projets Web
 
-## 🚀 Ajouter un projet
+## Ajouter un projet
+
+### 0. Prérequis
+- - Importer les dockerfiles dans le même dossier que le `docker-compose.yml` :
+  - `Dockerfile.httpd` pour le serveur web
+  - `Dockerfile.mariadb` pour la base de données
 
 ### 1. Démarrer Traefik (si pas déjà fait)
 ```bash
@@ -74,20 +79,3 @@ docker network connect ${PROJECT_NAME}_net ${PROJECT_NAME}_web
 ```
 
 **✅ Accès : http://localhost/ipssi/**
-
----
-
-## 🗑️ Supprimer un projet
-
-```bash
-PROJECT_NAME="ipssi"
-
-# Arrêter et supprimer
-docker stop ${PROJECT_NAME}_web ${PROJECT_NAME}_db
-docker rm ${PROJECT_NAME}_web ${PROJECT_NAME}_db
-docker network rm ${PROJECT_NAME}_net
-docker rmi webstack-manager-${PROJECT_NAME}_web webstack-manager-${PROJECT_NAME}_db
-
-# Nettoyer les fichiers
-rm -rf projects/$PROJECT_NAME data/$PROJECT_NAME
-```
