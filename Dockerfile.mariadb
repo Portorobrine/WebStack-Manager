@@ -1,11 +1,23 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV MARIADB_ROOT_PASSWORD=rootpassword
+ENV MARIADB_DATABASE=webapp
+ENV MARIADB_USER=webuser
+ENV MARIADB_PASSWORD=webpassword
 
 RUN apt update && apt install -y mariadb-server && apt clean
 
+# Créer le répertoire pour le socket
+RUN mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld
+
+# Configurer MariaDB pour accepter les connexions externes
 RUN sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+
+# Copier le script d'entrée
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3306
 
-CMD ["mysqld", "--user=mysql"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

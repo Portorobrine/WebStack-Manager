@@ -29,11 +29,18 @@ EOF
 
 add() {
   local name="$1"
-  [ -z "$name" ] && { echo "Nom du projet requis"; exit 1; }
+  
+  [ -z "$name" ] && { echo "Usage: $0 add [nom]"; echo "Exemple: $0 add mon-projet"; exit 1; }
+  
+  # Vérifier si le projet existe déjà
+  if grep -q "${name}_web:" "$COMPOSE_FILE" 2>/dev/null; then
+    echo "Le projet '$name' existe déjà"
+    return 1
+  fi
   
   init
 
-  echo "Création '$name'..."
+  echo "Création du projet '$name'..."
   mkdir -p "$PROJECTS_DIR/$name"
   echo "<!DOCTYPE html><html><head><title>$name</title></head><body><h1>Projet $name</h1></body></html>" > "$PROJECTS_DIR/$name/index.html"
   
@@ -71,7 +78,6 @@ add() {
   /^networks:/ { print $0; getline; print; print "  " name "_net:"; next }
   { print }
   ' "$COMPOSE_FILE" > /tmp/compose && mv /tmp/compose "$COMPOSE_FILE"
-  # Ajouter le réseau spécifique au projet
   echo "'$name' créé - http://localhost/$name/"
   docker compose up -d --remove-orphans
 }
@@ -112,7 +118,22 @@ remove() {
 }
 
 case "$1" in
-  add) add "$2" ;;
-  remove) remove "$2" ;;
-  *) echo "Usage: $0 {add|remove} [nom]"; exit 1 ;;
+  add) 
+    if [ -z "$2" ]; then
+      echo "Usage: $0 add [nom-projet]"
+      exit 1
+    fi
+    add "$2"
+    ;;
+  remove) 
+    if [ -z "$2" ]; then
+      echo "Usage: $0 remove [nom-projet]" 
+      exit 1
+    fi
+    remove "$2"
+    ;;
+  *) 
+    echo "Usage: $0 {add|remove} [nom]"
+    exit 1
+    ;;
 esac
